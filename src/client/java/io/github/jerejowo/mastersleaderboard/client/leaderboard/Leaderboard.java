@@ -13,6 +13,8 @@ import java.util.Set;
 
 public class Leaderboard {
 
+    static final int ROWS = 10;
+
     private static final int PANEL_BG = 0x88000000;
     private static final int MAIN_TEXT_COLOR = 0xFFFFFF;
     private static final int SEC_TEXT_COLOR = 0xAAAAAA;
@@ -70,29 +72,30 @@ public class Leaderboard {
         int middleLeftColumnX = this.getMiddleLeftColumnX();
         int middleRightColumnX = this.getMiddleRightColumnX();
         int rightColumnX = this.getRightColumnX();
-        int columnY = this.getColumnY();
+        int topColumnY = this.getTopColumnY();
+        int userInfoY = this.getUserInfoY();
 
         this.drawPanel(context, panelX, panelY, panelWidth, panelHeight);
-        this.drawLeaderboardTable(context, leaderboardX, leaderboardY, leftColumnX, middleLeftColumnX, middleRightColumnX, rightColumnX, columnY);
-        this.drawLeaderboardInfo(context, leaderboardY, leftColumnX, middleLeftColumnX, middleRightColumnX);
+        this.drawLeaderboardTable(context, leaderboardX, leaderboardY, leftColumnX, middleLeftColumnX, middleRightColumnX, rightColumnX, topColumnY);
+        this.drawLeaderboardInfo(context, leaderboardY, leftColumnX, middleLeftColumnX, middleRightColumnX, userInfoY);
     }
 
     public void drawPanel(DrawContext context, int panelX, int panelY, int panelWidth, int panelHeight) {
         context.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, PANEL_BG);
     }
 
-    private void drawLeaderboardTable(DrawContext context, int leaderboardX, int leaderboardY, int leftColumnX, int middleLeftColumnX, int middleRightColumnX, int rightColumnX, int columnY) {
+    private void drawLeaderboardTable(DrawContext context, int leaderboardX, int leaderboardY, int leftColumnX, int middleLeftColumnX, int middleRightColumnX, int rightColumnX, int topColumnY) {
 
         context.drawText(this.textRenderer, "Leaderboard", leftColumnX, leaderboardY - 15, MAIN_TEXT_COLOR, false);
 
-        context.drawText(this.textRenderer, "#", leftColumnX + 8, columnY, SEC_TEXT_COLOR, false);
-        context.drawText(this.textRenderer, "Player", middleLeftColumnX + 4, columnY, SEC_TEXT_COLOR, false);
-        context.drawText(this.textRenderer, "Points", middleRightColumnX - 2, columnY, SEC_TEXT_COLOR, false);
+        context.drawText(this.textRenderer, "#", leftColumnX + 8, topColumnY, SEC_TEXT_COLOR, false);
+        context.drawText(this.textRenderer, "Player", middleLeftColumnX + 4, topColumnY, SEC_TEXT_COLOR, false);
+        context.drawText(this.textRenderer, "Points", middleRightColumnX - 2, topColumnY, SEC_TEXT_COLOR, false);
 
-        columnY += 12;
+        topColumnY += 12;
 
-        int rowY = columnY;
-        for (int i = 0; i < 10; i++) {
+        int rowY = topColumnY;
+        for (int i = 0; i < ROWS; i++) {
             int bgColor = (i % 2 == 0) ? ROW_1_COLOR : ROW_2_COLOR;
             context.fill(leaderboardX - 5, rowY, rightColumnX, rowY + 20, bgColor);
             rowY += 20;
@@ -100,19 +103,19 @@ public class Leaderboard {
         rowY += 2;
         context.fill(leaderboardX - 5, rowY, rightColumnX, rowY + 20, ROW_USER_COLOR);
 
-        int lineBottom = columnY + 222;
+        int bottomColumnY = this.getBottomColumnY();
         int lineColor = BORDER_COLOR;
-        context.fill(leftColumnX, columnY - 2, rightColumnX + 2, columnY, lineColor);
-        context.fill(leftColumnX, columnY, leftColumnX + 2, lineBottom, lineColor);
-        context.fill(middleLeftColumnX, columnY, middleLeftColumnX + 2, lineBottom, lineColor);
-        context.fill(middleRightColumnX, columnY, middleRightColumnX + 2, lineBottom, lineColor);
-        context.fill(rightColumnX, columnY, rightColumnX + 2, lineBottom, lineColor);
-        context.fill(leftColumnX, lineBottom - 22, rightColumnX + 2, lineBottom - 20, lineColor);
-        context.fill(leftColumnX, lineBottom, rightColumnX + 2, lineBottom + 2, lineColor);
+        context.fill(leftColumnX, topColumnY - 2, rightColumnX + 2, topColumnY, lineColor);
+        context.fill(leftColumnX, topColumnY, leftColumnX + 2, bottomColumnY, lineColor);
+        context.fill(middleLeftColumnX, topColumnY, middleLeftColumnX + 2, bottomColumnY, lineColor);
+        context.fill(middleRightColumnX, topColumnY, middleRightColumnX + 2, bottomColumnY, lineColor);
+        context.fill(rightColumnX, topColumnY, rightColumnX + 2, bottomColumnY, lineColor);
+        context.fill(leftColumnX, bottomColumnY - 22, rightColumnX + 2, bottomColumnY - 20, lineColor);
+        context.fill(leftColumnX, bottomColumnY, rightColumnX + 2, bottomColumnY + 2, lineColor);
 
     }
 
-    public void drawLeaderboardInfo(DrawContext context, int leaderboardY, int leftColumnX, int middleLeftColumnX, int middleRightColumnX) {
+    public void drawLeaderboardInfo(DrawContext context, int leaderboardY, int leftColumnX, int middleLeftColumnX, int middleRightColumnX, int userInfoY) {
 
         if (this.loading || this.currentPlayers == null || this.currentPlayers.length == 0) {
             context.drawText(this.textRenderer, "(Loading...)", leftColumnX + this.textRenderer.getWidth("Leaderboard") + 4, leaderboardY - 15, SEC_TEXT_COLOR, false);
@@ -120,9 +123,9 @@ public class Leaderboard {
         }
 
         leaderboardY += 18;
-        for (int i = 0; i < Math.min(10, this.currentPlayers.length - this.page * 10) ; i++) {
+        for (int i = 0; i < Math.min(ROWS, this.currentPlayers.length - this.page * ROWS) ; i++) {
 
-            LeaderboardPlayer player = this.currentPlayers[i + 10 * this.page];
+            LeaderboardPlayer player = this.currentPlayers[i + ROWS * this.page];
 
             String name = this.textRenderer.trimToWidth(player.username, middleRightColumnX - middleLeftColumnX - 15);
 
@@ -145,7 +148,7 @@ public class Leaderboard {
             name = name.substring(0, name.length() - 2) + "...";
         }
 
-        this.drawPlayer(context, 260, leftColumnX, middleLeftColumnX, middleRightColumnX, user, name); // todo magic number
+        this.drawPlayer(context, userInfoY, leftColumnX, middleLeftColumnX, middleRightColumnX, user, name);
     }
 
     private void drawPlayer(DrawContext context, int leaderboardY, int leftColumnX, int middleLeftColumnX, int middleRightColumnX, LeaderboardPlayer player, String name) {
@@ -204,7 +207,7 @@ public class Leaderboard {
     }
 
     public void nextPage() {
-        if (page < (currentPlayers.length - 1) / 10) {
+        if (page < (currentPlayers.length - 1) / ROWS) {
             page = page + 1;
             this.fetcher.fetchTexturesAsync(this);
         }
@@ -232,7 +235,7 @@ public class Leaderboard {
 
     public int getFlipButtonY() { return this.getPanelY(); }
 
-    public int getBottomButtonY() { return 278; }
+    public int getBottomButtonY() { return this.getBottomColumnY() + 4; }
 
     public int getDisableButtonWidth() { return Math.min(100, this.getPanelWidth() / 2) ; }
 
@@ -264,5 +267,9 @@ public class Leaderboard {
 
     private int getRightColumnX() { return this.getPanelX() + this.getPanelWidth() - 17; }
 
-    private int getColumnY() { return this.getLeaderboardY(); }
+    private int getTopColumnY() { return this.getLeaderboardY(); }
+
+    private int getBottomColumnY() { return this.getPanelY() + ROWS * 20 + 74; }
+
+    private int getUserInfoY() { return ROWS * 20 + 60; }
 }

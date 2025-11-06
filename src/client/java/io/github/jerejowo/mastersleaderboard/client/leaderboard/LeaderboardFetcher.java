@@ -40,8 +40,8 @@ public class LeaderboardFetcher {
     @Unique
     void fetchTexturesAsync(Leaderboard leaderboard) {
         new Thread(() -> {
-            for (int i = 0 ; i < Math.min(10, leaderboard.currentPlayers.length - leaderboard.page * 10) ; i++) {
-                LeaderboardPlayer player = leaderboard.currentPlayers[i + leaderboard.page * 10];
+            for (int i = 0 ; i < Math.min(Leaderboard.ROWS , leaderboard.currentPlayers.length - leaderboard.page * Leaderboard.ROWS) ; i++) {
+                LeaderboardPlayer player = leaderboard.currentPlayers[i + leaderboard.page * Leaderboard.ROWS];
 
                 if (Leaderboard.loadedAvatars.contains(player.username)) {
                     continue;
