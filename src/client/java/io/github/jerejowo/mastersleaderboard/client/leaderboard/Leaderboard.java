@@ -16,8 +16,8 @@ public class Leaderboard {
     static final int ROWS = 10;
 
     private static final int PANEL_BG = 0x88000000;
-    private static final int MAIN_TEXT_COLOR = 0xFFFFFF;
-    private static final int SEC_TEXT_COLOR = 0xAAAAAA;
+    private static final int MAIN_TEXT_COLOR = 0xFFFFFFFF;
+    private static final int SEC_TEXT_COLOR = 0xFFAAAAAA;
     private static final int BORDER_COLOR = 0xFFFFFFFF;
     private static final int ROW_1_COLOR = 0x55000044;
     private static final int ROW_2_COLOR = 0x55000088;
