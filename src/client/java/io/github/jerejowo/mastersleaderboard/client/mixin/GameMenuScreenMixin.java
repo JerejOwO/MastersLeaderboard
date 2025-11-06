@@ -27,15 +27,7 @@ public abstract class GameMenuScreenMixin extends Screen {
     private void init(CallbackInfo ci) {
         this.leaderboard = new Leaderboard(this.textRenderer, this.client, this.width, this.height, this.page);
 
-        this.addDrawableChild(leaderboard.getDisableButton());
-
-        this.addDrawableChild(leaderboard.getFlipButton());
-
-        this.addDrawableChild(leaderboard.getBackButton());
-
-        this.addDrawableChild(leaderboard.getNextButton());
-
-        this.addDrawableChild(leaderboard.getRefreshButton());
+        this.leaderboard.getButtons().forEach(this::addDrawableChild);
     }
 
     @Inject(method = "render", at = @At("TAIL"))

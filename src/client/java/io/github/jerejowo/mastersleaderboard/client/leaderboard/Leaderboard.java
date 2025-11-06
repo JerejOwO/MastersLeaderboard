@@ -1,10 +1,9 @@
 package io.github.jerejowo.mastersleaderboard.client.leaderboard;
 
+import io.github.jerejowo.mastersleaderboard.client.leaderboard.button.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 import java.util.Arrays;
@@ -37,11 +36,7 @@ public class Leaderboard {
     MinecraftClient client;
     LeaderboardPlayer[] currentPlayers = new LeaderboardPlayer[0];
     static Set<String> loadedAvatars = new HashSet<>();
-    ButtonWidget disableButton;  // TODO: Cambiar por un set de buttons en Leaderboard y siempre que se haga algo para todos (GameMenuScreenMixin.init, new Leaderboard, disableButton, flipButton) hacer foreach
-    ButtonWidget flipButton;
-    ButtonWidget backButton;
-    ButtonWidget nextButton;
-    ButtonWidget refreshButton;
+    Set<Button> buttons;
 
     public Leaderboard(TextRenderer textRenderer, MinecraftClient client, int width, int height, int page) {
         this.fetcher = new LeaderboardFetcher();
@@ -50,13 +45,15 @@ public class Leaderboard {
         this.width = width;
         this.height = height;
         this.page = page;
-        this.disableButton = this.buildDisableButton();
-        this.flipButton = this.buildFlipButton();
-        this.backButton = this.buildBackButton();
-        this.nextButton = this.buildNextButton();
-        this.refreshButton = this.buildRefreshButton();
+        this.buttons = Set.of(
+                new DisableButton(this),
+                new FlipButton(this),
+                new BackButton(this),
+                new NextButton(this),
+                new RefreshButton(this)
+                );
 
-        this.fetcher.fetchPlayersAsync(this);
+        this.refresh();
     }
 
     public void draw(DrawContext context) {
@@ -188,95 +185,64 @@ public class Leaderboard {
                 .orElse(LeaderboardPlayer.getDefaultPlayer());
     }
 
-    public ButtonWidget buildDisableButton() {
-        return ButtonWidget.builder(Text.of("Leaderboard: " + (enabled ? "On" : "Off")), button -> {
-            enabled = !enabled;
-            button.setMessage(Text.of("Leaderboard: " + (enabled ? "On" : "Off")));
-            this.getFlipButton().visible = enabled;
-            this.getBackButton().visible = enabled;
-            this.getNextButton().visible = enabled;
-            this.getRefreshButton().visible = enabled;
-
-            buttonPressDown(button);
-        }).dimensions(this.getPanelX(), this.getPanelY(), this.getDisableButtonWidth(), this.getButtonHeight()).build();
+    public void toggleEnabled() {
+        enabled = !enabled;
+        this.getButtons().forEach(Button::toggleVisibility);
     }
 
-    public ButtonWidget buildFlipButton() {
-        return ButtonWidget.builder(Text.of("Flip"), button -> {
-            flipped = !flipped;
-            this.getDisableButton().setPosition(this.getPanelX(), this.getPanelY());
-            button.setPosition(this.getFlipButtonX(), this.getPanelY());
-            this.getBackButton().setPosition(this.getBackButtonX(), this.getBottomButtonY());
-            this.getNextButton().setPosition(this.getNextButtonX(), this.getBottomButtonY());
-            this.getRefreshButton().setPosition(this.getRefreshButtonX(), this.getBottomButtonY());
+    public void flip() {
+        flipped = !flipped;
+        this.getButtons().forEach(Button::adjustPosition);
 
-            this.buttonPressDown(button);
-        }).dimensions(this.getFlipButtonX(), this.getPanelY(), this.getFlipButtonWidth(), this.getButtonHeight()).build();
     }
 
-    public ButtonWidget buildBackButton() {
-        ButtonWidget backButton = ButtonWidget.builder(Text.of("<-"), button -> {
-            if (this.page > 0) {
-                this.page = this.page - 1;
-                this.fetcher.fetchTexturesAsync(this);
-            }
-            this.buttonPressDown(button);
-        }).dimensions(this.getBackButtonX(), this.getBottomButtonY(), this.getButtonWidth(), this.getButtonHeight()).build();
-
-        backButton.visible = enabled;
-
-        return backButton;
+    public void previousPage() {
+        if (this.page > 0) {
+            this.page = this.page - 1;
+            this.fetcher.fetchTexturesAsync(this);
+        }
     }
 
-    public ButtonWidget buildNextButton() {
-        ButtonWidget nextButton = ButtonWidget.builder(Text.of("->"), button -> {
-            if (page < (currentPlayers.length - 1) / 10) {
-                page = page + 1;
-                this.fetcher.fetchTexturesAsync(this);
-            }
-            this.buttonPressDown(button);
-        }).dimensions(this.getNextButtonX(), this.getBottomButtonY(), this.getButtonWidth(), this.getButtonHeight()).build();
-
-        nextButton.visible = enabled;
-
-        return nextButton;
+    public void nextPage() {
+        if (page < (currentPlayers.length - 1) / 10) {
+            page = page + 1;
+            this.fetcher.fetchTexturesAsync(this);
+        }
     }
 
-    public ButtonWidget buildRefreshButton() {
-        ButtonWidget refreshButton = ButtonWidget.builder(Text.of("Refresh"), button -> {
-            this.fetcher.fetchPlayersAsync(this);
-            this.buttonPressDown(button);
-        }).dimensions(getRefreshButtonX(), getBottomButtonY(), this.getRefreshButtonWidth(), this.getButtonHeight()).build();
-
-        refreshButton.visible = enabled;
-
-        return refreshButton;
+    public void refresh() {
+        this.fetcher.fetchPlayersAsync(this);
     }
 
-    private void buttonPressDown(ButtonWidget button) {
-        button.active = false;
+    public static boolean isEnabled() { return enabled; }
 
-        new Thread(() -> {
-            try {
-                Thread.sleep(100);
-            } catch (Exception ignored) {}
+    public Set<Button> getButtons() { return this.buttons; }
 
-            MinecraftClient.getInstance().execute(() -> {
-                button.active = true;
-                button.setFocused(false);
-            });
-        }).start();
-    }
+    public int getDisableButtonX() { return this.getPanelX(); }
 
-    public ButtonWidget getDisableButton() { return this.disableButton; }
+    public int getFlipButtonX() { return this.getPanelX() + this.getPanelWidth() - this.getFlipButtonWidth(); }
 
-    public ButtonWidget getFlipButton() { return this.flipButton; }
+    public int getRefreshButtonX() { return this.getBackButtonX() + this.getButtonWidth() + 2; }
 
-    public ButtonWidget getBackButton() { return this.backButton; }
+    public int getBackButtonX() { return this.getLeftColumnX(); }
 
-    public ButtonWidget getNextButton() { return this.nextButton; }
+    public int getNextButtonX() { return this.getMiddleRightColumnX() + 2; }
 
-    public ButtonWidget getRefreshButton() { return this.refreshButton; }
+    public int getDisableButtonY() { return this.getPanelY(); }
+
+    public int getFlipButtonY() { return this.getPanelY(); }
+
+    public int getBottomButtonY() { return 278; }
+
+    public int getDisableButtonWidth() { return Math.min(100, this.getPanelWidth() / 2) ; }
+
+    public int getFlipButtonWidth() { return Math.min(50, this.getPanelWidth() / 2); }
+
+    public int getRefreshButtonWidth() { return this.getNextButtonX() - this.getBackButtonX() - this.getButtonWidth() - 4; }
+
+    public int getButtonWidth() { return 22; }
+
+    public int getButtonHeight() { return 20; }
 
     private int getPanelX() { return flipped ? this.width - this.getPanelWidth() : 0; }
 
@@ -299,24 +265,4 @@ public class Leaderboard {
     private int getRightColumnX() { return this.getPanelX() + this.getPanelWidth() - 17; }
 
     private int getColumnY() { return this.getLeaderboardY(); }
-
-    private int getRefreshButtonX() { return this.getBackButtonX() + this.getButtonWidth() + 2; }
-
-    private int getFlipButtonX() { return this.getPanelX() + this.getPanelWidth() - this.getFlipButtonWidth(); }
-
-    private int getBackButtonX() { return this.getLeftColumnX(); }
-
-    private int getNextButtonX() { return this.getMiddleRightColumnX() + 2; }
-
-    private int getBottomButtonY() { return 278; }
-
-    private int getDisableButtonWidth() { return Math.min(100, this.getPanelWidth() / 2) ; }
-
-    private int getFlipButtonWidth() { return Math.min(50, this.getPanelWidth() / 2); }
-
-    private int getRefreshButtonWidth() { return this.getNextButtonX() - this.getBackButtonX() - this.getButtonWidth() - 4; }
-
-    private int getButtonWidth() { return 22; }
-
-    private int getButtonHeight() { return 20; }
 }
